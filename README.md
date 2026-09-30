@@ -1,77 +1,97 @@
-# Cybersecurity & Threat Detection Projects
+# Cybersecurity Log Monitoring Project – ELK Stack
 
-[![SIEM](https://img.shields.io/badge/SIEM-ELK%20Stack-005571.svg?logo=elastic)](https://www.elastic.co/)
-[![Elasticsearch](https://img.shields.io/badge/Search-Elasticsearch-005571.svg?logo=elasticsearch)](https://www.elastic.co/elasticsearch)
-[![Kibana](https://img.shields.io/badge/Visualization-Kibana-E8488B.svg?logo=kibana)](https://www.elastic.co/kibana)
-[![Logstash](https://img.shields.io/badge/Pipeline-Logstash-005571.svg?logo=logstash)](https://www.elastic.co/logstash)
-[![Beats](https://img.shields.io/badge/Agents-Winlogbeat%20%7C%20Filebeat-00BFB3.svg)](https://www.elastic.co/beats/)
+> **Student Lab Project**  
+> **Student:** Gagana C P  
+> **Focus:** System log collection, SIEM concepts, and monitoring security events  
 
-Hands-on cybersecurity implementations, centralized security information and event management (SIEM) pipelines, log monitoring, and threat detection systems developed through professional certifications (Unlox Edge, Tata Insights Forage) and academic research.
+This is a practical learning project where I set up and tested a centralized log monitoring lab using the ELK Stack (Elasticsearch, Logstash, Kibana) and Beats. The goal was to understand how system security logs from Windows and Linux machines are collected, parsed, and monitored for suspicious activity.
 
 ---
 
-## 🛡️ Featured: Centralized Log Monitoring & Threat Detection System (ELK Stack)
+## What I Was Trying to Learn
 
-### 📌 Project Overview
-A centralized SIEM and log monitoring infrastructure designed to ingest, process, store, and visualize security events from distributed Windows and Linux endpoints to rapidly detect unauthorized access attempts and suspicious system activities.
+When managing servers or computers, checking logs individually on each machine is slow and difficult. In organizations, security teams use SIEM (Security Information and Event Management) tools to gather logs in one place so they can spot issues quickly.
 
-### 🏗️ Architecture & Data Flow
+I wanted to set up a practical lab environment to learn:
+* How log shipping agents collect operating system events.
+* How Logstash parses and structures raw logs.
+* How Elasticsearch indexes logs for fast searching.
+* How to write basic queries in Kibana to look for failed logins and security warnings.
+
+---
+
+## Lab Architecture
 
 ```text
-  Windows Endpoints                   Linux Endpoints
-   (Winlogbeat)                        (Filebeat)
-         │                                  │
-         └─────────────────┬────────────────┘
-                           │
-                           ▼
-                  Logstash Pipeline
-              (Filter, Parse & Enrich)
-                           │
-                           ▼
-                  Elasticsearch Cluster
-               (Indexing & Storage Engine)
-                           │
-                           ▼
-                 Kibana Dashboard & SIEM
-            (KQL Queries, Visualizations, Alerts)
+[ Windows 10 / 11 Endpoint ]         [ Linux / Ubuntu Endpoint ]
+   (Winlogbeat Agent)                   (Filebeat Agent)
+           │                                    │
+           │ Event ID 4624 / 4625               │ /var/log/auth.log
+           ▼                                    ▼
+       ┌────────────────────────────────────────────┐
+       │             Logstash Pipeline              │
+       │    (Filters, parses timestamps & fields)   │
+       └─────────────────────┬──────────────────────┘
+                             │
+                             ▼
+       ┌────────────────────────────────────────────┐
+       │               Elasticsearch                │
+       │             (Indexes log events)           │
+       └─────────────────────┬──────────────────────┘
+                             │
+                             ▼
+       ┌────────────────────────────────────────────┐
+       │             Kibana Dashboard               │
+       │       (Visualizations & KQL Search)        │
+       └────────────────────────────────────────────┘
 ```
 
-### ⚙️ Core Components & Tools
+---
 
-| Component | Role in Pipeline |
-| :--- | :--- |
-| **Elasticsearch** | High-performance search and analytics engine for storing and querying indexed security logs. |
-| **Logstash** | Centralized data processing pipeline that ingests logs, applies filters, parses timestamps, and routes structured events. |
-| **Kibana** | Centralized SIEM management console providing interactive security dashboards, KQL search, and alert rules. |
-| **Winlogbeat** | Lightweight shipper installed on Windows hosts to stream Windows Security Event logs (Event IDs 4624, 4625, etc.). |
-| **Filebeat** | Lightweight shipper on Linux hosts collecting `/var/log/auth.log`, system syslog, and SSH authentication events. |
+## What I Configured & Tested
+
+1. **Windows Event Log Collection (Winlogbeat):**
+   * Configured Winlogbeat on Windows to monitor the `Security` event channel.
+   * Focused on specific Windows Security Event IDs:
+     * **Event ID 4625:** An account failed to log on (wrong password or invalid user).
+     * **Event ID 4624:** An account was successfully logged on.
+     * **Event ID 4720:** A user account was created.
+
+2. **Linux Authentication Logs (Filebeat):**
+   * Installed Filebeat on an Ubuntu virtual machine to monitor `/var/log/auth.log`.
+   * Collected SSH login attempts, `sudo` command executions, and authentication failures.
+
+3. **Logstash Processing Pipeline:**
+   * Configured an input listener to receive log events from Beats over port 5044.
+   * Applied basic filter blocks to extract IP addresses, usernames, and event categories into structured fields.
+
+4. **Kibana Dashboards & Querying:**
+   * Built visual dashboard panels in Kibana showing:
+     * Total failed vs. successful logins over time.
+     * Top usernames targeted during failed login attempts.
+     * Sources of authentication events.
+   * Practiced writing KQL (Kibana Query Language) filters such as:
+     ```text
+     winlog.event_id: 4625 and user.name: "Administrator"
+     ```
 
 ---
 
-## 🔍 Key Detection Capabilities & Rule Sets
+## What I Observed
 
-- **Brute Force & Multiple Failed Logins**: Detection rules configured to trigger high-severity alerts when repeated failed login attempts occur within a condensed time window.
-- **SSH Authentication Monitoring**: Real-time tracking of successful and failed SSH connection attempts across Linux servers.
-- **Centralized Security Dashboard**: Visual metrics tracking authentication trends, top targeted usernames, source IP distributions, and active alert severity levels.
-
----
-
-## 📸 Implementation Dashboards & Evidence
-
-The complete project report and high-resolution setup screenshots are located in [`Major-Project-ELK`](./Major-Project-ELK):
-- Detailed Project Report: [`ELK-Centralized-Log-Monitoring-Threat-Detection-Report.pdf`](./Major-Project-ELK/ELK-Centralized-Log-Monitoring-Threat-Detection-Report.pdf)
-- Visual Artifacts:
-  - Ubuntu Network Adapter Configuration
-  - Elasticsearch & Kibana Setup
-  - Custom Data View Configurations
-  - Kibana Security Monitoring Dashboard
-  - Threat Detection Rule Definitions
-  - Multiple Failed Login Alert Details
+* **Brute-Force Patterns:** During testing, repeated failed attempts with invalid passwords quickly stand out as sudden spikes on the Kibana timeline chart.
+* **Log Volume:** Even a single machine generates a large volume of background logs, showing why filtering and field parsing in Logstash is important before indexing into Elasticsearch.
 
 ---
 
-## 📜 Certifications Grounding This Work
+## What I Learned
 
-- **Cybersecurity Analyst Job Simulation** — *Tata Insights (Forage)*
-- **Unlox Edge Certification – Cyber Security (Course Completion)** — *Credential ID: UNXCS-2026-9339*
-- **Unlox Edge Certification – Cyber Security (Internship & Project-Based Learning)** — *Credential ID: UNXCS-INT-9339*
+* The practical difference between log shippers (Beats), log parsers (Logstash), search indexes (Elasticsearch), and visualization frontends (Kibana).
+* How Windows records authentication events through numeric Event IDs.
+* How to use Kibana to search through logs and identify patterns rather than scrolling through raw text files.
+
+---
+
+## Note on Project Scope
+
+This is an educational lab project built on local/virtual machines to learn log management and SIEM fundamentals. It is not a commercial enterprise SOC deployment.
